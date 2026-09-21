@@ -33,3 +33,10 @@ def obtener_usuario(usuario_id: int):
 @app.get("/saludo/{nombre}")
 def saludo(nombre: str):
     return {"mensaje": f"Hola, {nombre}"}
+
+@app.get("/usuario")
+def usuario(nombre: str, edad: int):
+    return{
+        "Nombre": nombre,
+        "Edad": edad
+    }
