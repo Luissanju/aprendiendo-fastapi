@@ -1,171 +1,197 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from database import obtener_conexion
+
+from sqlalchemy.orm import Session
+
+from database import engine
+from models import Usuario
 
 from retos import router as retos_router
 
 
+# ============================================================
+# CREAR LA API
+# ============================================================
+
 app = FastAPI()
 
-# Cargamos las rutas de los retos
-# Las ponemos antes del CRUD para evitar conflictos
-# con /usuarios/{usuario_id}
+
+# ============================================================
+# REGISTRAR LAS RUTAS DE LOS RETOS
+# ============================================================
+
 app.include_router(retos_router)
 
 
-class Usuario(BaseModel):
+# ============================================================
+# MODELO PARA LOS DATOS QUE RECIBE LA API
+# ============================================================
+
+class UsuarioSchema(BaseModel):
     nombre: str
     edad: int
     ciudad: str
 
 
-# GET mostrar mensaje de inicio
+# ============================================================
+# GET /
+# Endpoint de inicio
+# ============================================================
+
 @app.get("/")
 def inicio():
-    return {"mensaje": "Mi primera API CRUD"}
+
+    return {
+        "mensaje": "Mi primera API CRUD"
+    }
 
 
-# POST crear nuevo usuario
-@app.post("/usuarios", status_code=201)
-def crear_usuario(usuario: Usuario):
+# ============================================================
+# GET /usuarios
+# Obtener todos los usuarios
+# ============================================================
 
-    conexion = obtener_conexion()
-    cursor = conexion.cursor()
-
-    cursor.execute(
-        """
-        INSERT INTO usuarios (nombre, edad, ciudad)
-        VALUES (?, ?, ?)
-        """,
-        (usuario.nombre, usuario.edad, usuario.ciudad)
-    )
-
-    conexion.commit()
-
-    # Nos permite saber qué id ha recibido
-    # el usuario recién creado
-    nuevo_id = cursor.lastrowid
-
-    cursor.execute(
-        "SELECT * FROM usuarios WHERE id = ?",
-        (nuevo_id,)
-    )
-
-    nuevo_usuario = cursor.fetchone()
-
-    conexion.close()
-
-    return dict(nuevo_usuario)
-
-
-# GET mostrar todos los usuarios
 @app.get("/usuarios")
 def obtener_usuarios():
 
-    conexion = obtener_conexion()
-    cursor = conexion.cursor()
+    with Session(engine) as session:
 
-    cursor.execute("SELECT * FROM usuarios")
+        usuarios = session.query(Usuario).all()
 
-    usuarios = cursor.fetchall()
+        return [
+            {
+                "id": usuario.id,
+                "nombre": usuario.nombre,
+                "edad": usuario.edad,
+                "ciudad": usuario.ciudad
+            }
+            for usuario in usuarios
+        ]
 
-    conexion.close()
 
-    return [dict(usuario) for usuario in usuarios]
+# ============================================================
+# GET /usuarios/{usuario_id}
+# Obtener un usuario mediante su ID
+# ============================================================
 
-
-# GET mostrar usuario con ese id
 @app.get("/usuarios/{usuario_id}")
 def obtener_usuario(usuario_id: int):
 
-    conexion = obtener_conexion()
-    cursor = conexion.cursor()
+    with Session(engine) as session:
 
-    cursor.execute(
-        "SELECT * FROM usuarios WHERE id = ?",
-        (usuario_id,)
-    )
+        usuario = session.query(Usuario).filter(
+            Usuario.id == usuario_id
+        ).first()
 
-    usuario = cursor.fetchone()
+        if usuario is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Usuario no encontrado"
+            )
 
-    conexion.close()
+        return {
+            "id": usuario.id,
+            "nombre": usuario.nombre,
+            "edad": usuario.edad,
+            "ciudad": usuario.ciudad
+        }
 
-    if usuario is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Usuario no encontrado"
+
+# ============================================================
+# POST /usuarios
+# Crear un nuevo usuario
+# ============================================================
+
+@app.post("/usuarios", status_code=201)
+def crear_usuario(usuario: UsuarioSchema):
+
+    with Session(engine) as session:
+
+        nuevo_usuario = Usuario(
+            nombre=usuario.nombre,
+            edad=usuario.edad,
+            ciudad=usuario.ciudad
         )
 
-    return dict(usuario)
+        session.add(nuevo_usuario)
+
+        session.commit()
+
+        # Actualizamos el objeto para obtener el ID generado
+        session.refresh(nuevo_usuario)
+
+        return {
+            "id": nuevo_usuario.id,
+            "nombre": nuevo_usuario.nombre,
+            "edad": nuevo_usuario.edad,
+            "ciudad": nuevo_usuario.ciudad
+        }
 
 
-# PUT modificar usuario
+# ============================================================
+# PUT /usuarios/{usuario_id}
+# Modificar un usuario existente
+# ============================================================
+
 @app.put("/usuarios/{usuario_id}")
-def modificar_usuario(usuario_id: int, usuario: Usuario):
+def modificar_usuario(
+    usuario_id: int,
+    usuario: UsuarioSchema
+):
 
-    conexion = obtener_conexion()
-    cursor = conexion.cursor()
+    with Session(engine) as session:
 
-    cursor.execute(
-        """
-        UPDATE usuarios
-        SET nombre = ?,
-            edad = ?,
-            ciudad = ?
-        WHERE id = ?
-        """,
-        (
-            usuario.nombre,
-            usuario.edad,
-            usuario.ciudad,
-            usuario_id
-        )
-    )
+        usuario_db = session.query(Usuario).filter(
+            Usuario.id == usuario_id
+        ).first()
 
-    if cursor.rowcount == 0:
-        conexion.close()
+        if usuario_db is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Usuario no encontrado"
+            )
 
-        raise HTTPException(
-            status_code=404,
-            detail="Usuario no encontrado"
-        )
+        # Modificamos los datos
+        usuario_db.nombre = usuario.nombre
+        usuario_db.edad = usuario.edad
+        usuario_db.ciudad = usuario.ciudad
 
-    conexion.commit()
+        session.commit()
 
-    cursor.execute(
-        "SELECT * FROM usuarios WHERE id = ?",
-        (usuario_id,)
-    )
+        session.refresh(usuario_db)
 
-    usuario_actualizado = cursor.fetchone()
-
-    conexion.close()
-
-    return dict(usuario_actualizado)
+        return {
+            "id": usuario_db.id,
+            "nombre": usuario_db.nombre,
+            "edad": usuario_db.edad,
+            "ciudad": usuario_db.ciudad
+        }
 
 
-# DELETE borrar usuario
+# ============================================================
+# DELETE /usuarios/{usuario_id}
+# Eliminar un usuario
+# ============================================================
+
 @app.delete("/usuarios/{usuario_id}")
 def borrar_usuario(usuario_id: int):
 
-    conexion = obtener_conexion()
-    cursor = conexion.cursor()
+    with Session(engine) as session:
 
-    cursor.execute(
-        "DELETE FROM usuarios WHERE id = ?",
-        (usuario_id,)
-    )
+        usuario = session.query(Usuario).filter(
+            Usuario.id == usuario_id
+        ).first()
 
-    # Comprobamos el número de filas eliminadas
-    if cursor.rowcount == 0:
-        conexion.close()
+        if usuario is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Usuario no encontrado"
+            )
 
-        raise HTTPException(
-            status_code=404,
-            detail="Usuario no encontrado"
-        )
+        session.delete(usuario)
 
-    conexion.commit()
-    conexion.close()
+        session.commit()
 
-    return {"mensaje": "Usuario eliminado"}
+        return {
+            "mensaje": "Usuario eliminado"
+        }
