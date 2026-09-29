@@ -3,8 +3,8 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from database import engine
-from models import Usuario
+from app.database import engine
+from app.models import Usuario
 
 
 # ============================================================

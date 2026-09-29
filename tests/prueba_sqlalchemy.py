@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from database import engine
-from models import Usuario
+from app.database import engine
+from app.models import Usuario
 
 
 with Session(engine) as session:

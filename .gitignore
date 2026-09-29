@@ -1,3 +1,10 @@
+# Instaladores
+*.exe
+
+# Entorno de Python
 __pycache__/
 *.pyc
-usuarios.db
+
+# Entornos virtuales
+venv/
+.venv/

@@ -1,4 +1,4 @@
-from database import obtener_conexion
+from app.database import obtener_conexion
 
 conexion = obtener_conexion()
 
