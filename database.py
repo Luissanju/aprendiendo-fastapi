@@ -1,20 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from models import Base
+DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/mi_api"
 
-
-DATABASE_URL = "sqlite:///usuarios.db"
-
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False}
-)
-
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
-
-Base.metadata.create_all(bind=engine)
+engine = create_engine(DATABASE_URL)
