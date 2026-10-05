@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 
 from app.mini_crud import router as crud_router
-from app.retos import router as retos_router
+from app.reto_consolidacion import router as consolidacion
+
 
 
 # ============================================================
@@ -23,15 +24,13 @@ def inicio():
     }
 
 
+
+
 # ============================================================
-# REGISTRAR LAS RUTAS DEL CRUD
+# REGISTRAR LAS RUTAS DE CRUD
 # ============================================================
 
 app.include_router(crud_router)
 
 
-# ============================================================
-# REGISTRAR LAS RUTAS DE LOS RETOS
-# ============================================================
-
-app.include_router(retos_router)
+app.include_router(consolidacion)

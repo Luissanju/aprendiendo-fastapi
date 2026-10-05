@@ -27,6 +27,7 @@ class UsuarioSchema(BaseModel):
     nombre: str
     edad: int
     ciudad: str
+    email: str
 
 
 # ============================================================
@@ -50,7 +51,8 @@ def obtener_usuarios():
                 "id": usuario.id,
                 "nombre": usuario.nombre,
                 "edad": usuario.edad,
-                "ciudad": usuario.ciudad
+                "ciudad": usuario.ciudad,
+                "email": usuario.email
             }
             for usuario in usuarios
         ]
@@ -84,7 +86,8 @@ def obtener_usuario(usuario_id: int):
             "id": usuario.id,
             "nombre": usuario.nombre,
             "edad": usuario.edad,
-            "ciudad": usuario.ciudad
+            "ciudad": usuario.ciudad,
+            "email": usuario.email
         }
 
 
@@ -103,7 +106,8 @@ def crear_usuario(usuario: UsuarioSchema):
         nuevo_usuario = Usuario(
             nombre=usuario.nombre,
             edad=usuario.edad,
-            ciudad=usuario.ciudad
+            ciudad=usuario.ciudad,
+            email=usuario.email
         )
 
         # Añadimos el nuevo usuario a la sesión
@@ -121,7 +125,8 @@ def crear_usuario(usuario: UsuarioSchema):
             "id": nuevo_usuario.id,
             "nombre": nuevo_usuario.nombre,
             "edad": nuevo_usuario.edad,
-            "ciudad": nuevo_usuario.ciudad
+            "ciudad": nuevo_usuario.ciudad,
+            "email": nuevo_usuario.email
         }
 
 
@@ -155,6 +160,7 @@ def modificar_usuario(
         usuario_db.nombre = usuario.nombre
         usuario_db.edad = usuario.edad
         usuario_db.ciudad = usuario.ciudad
+        usuario_db.email = usuario.email
 
         # Guardamos los cambios
         session.commit()
@@ -167,7 +173,8 @@ def modificar_usuario(
             "id": usuario_db.id,
             "nombre": usuario_db.nombre,
             "edad": usuario_db.edad,
-            "ciudad": usuario_db.ciudad
+            "ciudad": usuario_db.ciudad,
+            "email": usuario_db.email
         }
 
 
