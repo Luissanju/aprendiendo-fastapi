@@ -201,6 +201,13 @@ def borrar_usuario(usuario_id: int):
                 detail="Usuario no encontrado"
             )
 
+        if usuario.pedidos:
+            raise HTTPException(
+                status_code = 409,
+                detail="No se puede eliminar un usuario con pedidos"
+            )
+    
+
         # Marcamos el usuario para eliminarlo
         session.delete(usuario)
 
